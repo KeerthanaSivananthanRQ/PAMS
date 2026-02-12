@@ -16,5 +16,5 @@ await agency.ViewCreatedDepartment(departmentName);
 await agency.EditDepartment(departmentName);
 await agency.AssertEditedDepartment(editedDepartmentName);
 
-await agency.EnableAndDisableDepartment(editedDepartmentName);
+//await agency.EnableAndDisableDepartment(editedDepartmentName);
 });

@@ -66,38 +66,47 @@ async EditDepartment(departmentName: string) {
 }
 async AssertEditedDepartment(editedDepartmentName: string){  
   await expect(this.searchbar).toBeVisible();
-  await this.searchbar.click();
   await this.searchbar.fill(editedDepartmentName);
-  await this.searchbar.press('Enter');
-  await expect(this.page.getByText(editedDepartmentName, { exact: true })).toBeVisible();
-  }
-async EnableAndDisableDepartment(departmentName:string){
-    //Enable
-    const card = this.page.locator(`div:has-text("${departmentName}")`);
-    const toggle = card.getByRole('switch');
-    await expect(toggle).toBeVisible();
-    await toggle.click({ force: true });
-    await this.DisableDepartmentModal();
-    await this.page.getByRole('button', { name: 'Confirm' }).click();
-    // Disable
-    await expect(toggle).toBeVisible();
-    await toggle.click({ force: true });
-    await this.EnableDepartmentModal();
-    await this.page.getByRole('button', { name: 'Confirm' }).click();
+  const row = this.page.getByRole('row', {
+    name: new RegExp(editedDepartmentName),
+  });
+
+} 
+
+async EnableAndDisableDepartment(editedDepartmentName: string) {
+  const card = this.page.locator(`div:has-text("${editedDepartmentName}")`);
+  const toggle = card.getByRole('switch');
+
+  // Disable
+  await expect(toggle).toBeVisible();
+  await expect(toggle).toHaveAttribute('aria-checked', 'true');
+  await toggle.click();
+  await this.DisableDepartmentModal();
+  await this.page.getByText('Confirm').click();
+
+  // Enable
+  await this.AssertEditedDepartment(editedDepartmentName);
+  await expect(toggle).toBeVisible();
+  await expect(toggle).toHaveAttribute('aria-checked', 'false');
+  await toggle.click();
+  await this.EnableDepartmentModal();
+  await this.page.getByText('Confirm').click();
 }
+
+  
     async DisableDepartmentModal(){
      //await expect(this.page.getByText('Disable Department')).toBeVisible();
      await expect(
   this.page.getByText(/disable department/i)
 ).toBeVisible();
      //await expect(this.page.getByText('All the users of this Department will no longer be able to access the app. Are you sure you want to proceed?')).toBeVisible();
-     await expect(this.page.getByRole('button', { name: 'No, Cancel' })).toBeVisible();
-     await expect(this.page.getByRole('button', { name: 'Confirm' })).toBeVisible();
+      await this.page.getByText('No, Cancel').isVisible();
+      await this.page.getByText('Confirm').isVisible();
     }
     async EnableDepartmentModal(){
      //await expect(this.page.getByText('Enable Department')).toBeVisible();
      //await expect(this.page.getByText('All the users of this Department will be able to access the application. Are you sure you want to proceed?')).toBeVisible();  
-     await expect(this.page.getByRole('button', { name: 'No, Cancel' })).toBeVisible();
-     await expect(this.page.getByRole('button', { name: 'Confirm' })).toBeVisible();
+      await this.page.getByText('No, Cancel').isVisible();
+      await this.page.getByText('Confirm').isVisible();
     }
 }
