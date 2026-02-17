@@ -5,7 +5,8 @@ export default async function globalSetup() {
   const context = await browser.newContext();
   const page = await context.newPage();
 
-  await page.goto('https://hon-orange-jellyfish.rootquotient.revolte.io/auth/login');
+  await page.goto('https://hon-orange-jellyfish.rootquotient.revolte.io/auth/login',{ waitUntil: 'domcontentloaded', timeout: 60000 });
+
   await page.fill('input[name="email"]', 'kautomation@yopmail.com');
   await page.fill('input[name="password"]', 'Password123!');
   await page.click('button:has-text("Login")');
