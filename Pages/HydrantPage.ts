@@ -1,92 +1,100 @@
-import { BasePage } from './BasePage.ts';   
-import { randomReadableName } from '../Utils/RandomNameGenerators.ts';
-import { expect } from '@playwright/test';
-import {faker} from '@faker-js/faker';
+import { Page,expect } from '@playwright/test'; 
+
+export class HydrantsPage {
+  page: Page;
+    hydrantRows;
+    addQPButton;
+    addQPIcon;
+    qPLocation;
+    pacItem;
+    confirmButton;
+    addHydrant;
+    searchInput;
+    table;
+    tableBodyRows;
+    editButton;
+    saveChangesButton;
+    deleteButton;
+    confirmDeleteButton;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.hydrantRows = this.page.locator('tbody tr').nth(2); 
+    this.addQPButton = this.page.getByRole('button',{ name : 'Add Hydrant'});
+    this.addQPIcon = this.page.locator('._myLocationIcon_82p7r_124');
+    this.qPLocation = this.page.getByPlaceholder('Enter the address or coordinates*').nth(1);
+    this.pacItem = this.page.locator('.pac-item').first();
+    this.confirmButton = this.page.getByRole('button', {name : 'Confirm Location'});
+    this.addHydrant = this.page.getByRole('button', {name : 'Add Hydrant'});
+    this.searchInput = this.page.getByPlaceholder("Search by Hydrant #, location...");
 
 
-export class Hydrants extends BasePage {
-
-    //----------------------------------------------LOCATORS--------------------------------------------------------------
-    public addHydrantButton = this.page.getByRole('button',{ name : 'Add Hydrant'});
-    public hydrantNameField = this.page.getByPlaceholder('Enter the address or coordinates*');
-    public addHydrantIcon = this.page.locator('._myLocationIcon_82p7r_124');
-    public confirmButton = this.page.getByRole('button', {name : 'Confirm Location'});
-    public addButton = this.page.getByRole('button', {name : 'Add hydrant'});
-    public hydrantLocation = this.page.getByPlaceholder('Enter the address or coordinates*').nth(1);
-
-
-    public searchInput = this.page.getByPlaceholder("Search by Hydrant #, location...");
 
     // ---------------------------------------------------------------- Table
-    public table = this.page.locator(".ant-table");
-    public tableBodyRows = this.page.locator('.ant-table-tbody > tr.ant-table-row:not([aria-hidden="true"])');
+    this.table = this.page.locator(".ant-table");
+    this.tableBodyRows = this.page.locator('.ant-table-tbody > tr.ant-table-row:not([aria-hidden="true"])');
 
-    public editButton = this.page.locator("//span[text()='edit_square']").first();
-    public saveChangesButton = this.page.getByRole('button', { name: 'Save Changes' });
+    this.editButton = this.page.locator("//span[text()='edit_square']").first();
+    this.saveChangesButton = this.page.getByRole('button', { name: 'Save Changes' });
+    this.deleteButton = this.page.locator("//span[text()='delete']").first();
+    this.confirmDeleteButton = this.page.getByRole('button', { name: 'Yes, Delete' });
 
-    public deleteButton = this.page.locator("//span[text()='delete']").first();
-    public confirmDeleteButton = this.page.getByRole('button', { name: 'Yes, Delete' });
-
-    public text = this.page.locator('.ant-table-tbody > tr.ant-table-row:not([aria-hidden="true"])').locator('td').first();
-
+  }
 
 
 
 
-    async createHydrant(cityName : string){
-        await this.addHydrantButton.click();
-        await this.addHydrantIcon.click();
-        await this.page.waitForTimeout(3000);
-        await this.hydrantLocation.fill(cityName);
-        await expect(this.confirmButton).toBeVisible();
-        await this.confirmButton.click();
-        await this.addButton.click();
+
+
+
+    async createQP( country : string): Promise<string> {
+        await this.addQPButton.click();
+          await this.addQPIcon.click();
+          await expect(this.qPLocation).toBeVisible();
+          // the qPlocation placeholder already has a default location which we need to remove to add any other addresses
+            // Clear the default value properly
+          await this.qPLocation.click();
+          await this.page.waitForTimeout(1000); // Wait for any potential UI updates
+          await this.qPLocation.press('ControlOrMeta+A');
+          await this.qPLocation.press("Backspace");
+          await this.qPLocation.type(country, {delay : 100});
+          await this.page.waitForTimeout(1000); // Wait for any potential UI updates
+  
+          await expect(this.pacItem).toBeVisible();
+          await this.pacItem.click();
+          await this.page.waitForTimeout(1000); // Wait for any potential UI updates
+          await this.confirmButton.click();
+         
+          await this.addHydrant.click();
+
+
+        const alert = this.page.getByRole('alert');
+        await expect(alert).toBeVisible();
+
+        const alertText = await alert.textContent();
+        const hydIdMatch = alertText?.match(/HYD-\d+/);
+
+        if(!hydIdMatch){
+            throw new Error('Hydrant already exists');
+        }
+
+        return hydIdMatch[0];
+  
     };
+
+
+    async searchByQPName(name: string) {
+        await this.searchInput.fill(name);
+        await this.searchInput.press("Enter");
+        await this.waitForTableToLoad();
+    }
 
 
     async waitForTableToLoad() {
         await expect(this.table).toBeVisible();
     }
 
-
-    async getFirstHydrantName(val: string): Promise<string> {
-        await this.waitForTableToLoad();
-
-        const rowCount = await this.tableBodyRows.count();
-        if (rowCount === 0) return "";
-
-        const firstRow =
-            val === "2" ? this.tableBodyRows.nth(2) : this.tableBodyRows.first();
-
-        const firstNameCell = firstRow.locator("td").first();
-        console.log((await firstNameCell.innerText()).trim());
-        return (await firstNameCell.innerText()).trim();
-    }
-
-    async searchByHydrantName(name: string) {
-        await this.searchInput.fill(name);
-        await this.searchInput.press("Enter");
-        await this.waitForTableToLoad();
-    }
-
-      async expectAllRowsContainHydrantsName(searchText: string) {
-        const names = await this.getAllHydrantNames();
-
-        if (names.length === 0) {
-        return;
-        }
-
-        for (const n of names) {
-        expect(n.toLowerCase()).toContain(searchText.toLowerCase());
-        }
-    }
-
-    async expectNoRows() {
-        await expect(this.tableBodyRows).toHaveCount(0);
-    };
-      
-    
-    async getAllHydrantNames(): Promise<string[]> {
+    async getAllHydNames(): Promise<string[]> {
             const rows = this.tableBodyRows;
             const count = await rows.count();
 
@@ -101,14 +109,45 @@ export class Hydrants extends BasePage {
             return names;
         }
 
-    async editFunction(){
-          
-            await this.editButton.click();
-            await this.saveChangesButton.click();
+    async expectAllRowsContainHydName(searchText: string) {
+        const names = await this.getAllHydNames();
+
+        if (names.length === 0) {
+        return;
+        }
+
+        for (const n of names) {
+        expect(n.toLowerCase()).toContain(searchText.toLowerCase());
+        }
     }
 
-    async deleteFunction(){
+    async editFunction(country: string, id: string){
+        
+        this.searchByQPName(id);
+        await this.editButton.click();
+
+        await this.addQPIcon.click();
+        await expect(this.qPLocation).toBeVisible();
+        // the qPlocation placeholder already has a default location which we need to remove to add any other addresses
+        // Clear the default value properly
+          await this.qPLocation.click();
+          await this.page.waitForTimeout(1000); // Wait for any potential UI updates
+          await this.qPLocation.press('ControlOrMeta+A');
+          await this.qPLocation.press("Backspace");
+          await this.qPLocation.type(country, {delay : 100});
+          await this.page.waitForTimeout(1000); // Wait for any potential UI updates
+  
+          await expect(this.pacItem).toBeVisible();
+          await this.pacItem.click();
+          await this.page.waitForTimeout(1000); // Wait for any potential UI updates
+          await this.confirmButton.click();
+        await this.saveChangesButton.click();
+    }
+    
+
+    async deleteHydrant(id: string){
+        this.searchByQPName(id);
         await this.deleteButton.click();
         await this.confirmDeleteButton.click();
     }
-};
+}

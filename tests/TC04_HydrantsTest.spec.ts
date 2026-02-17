@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { Hydrants } from '../Pages/HydrantPage';
-import {faker} from '@faker-js/faker';
+import { HydrantsPage } from '../Pages/HydrantPage'; 
 
 test.beforeEach(async ({page}) =>{
   await page.goto('/hydrant-quick-pi');
@@ -11,44 +10,37 @@ test.use({
   permissions: ['geolocation'],
 });
 
-
-const name = faker.person.firstName();
-const country = ['ooty', 'coimbatore', 'chennai', 'bangalore', 'mysore'];
-const name2 = faker.person.firstName();
-
-function getRandomCountry() {
-  const randomIndex = Math.floor(Math.random() * country.length);
-  return country[randomIndex];
-}
+let id : string;
 
 
-// test('adding hydrants', async ({page}) =>{
-//     const hydrants = new Hydrants(page);
-//     await hydrants.createHydrant(getRandomCountry());
-// });
+test("Adding a hydrant properly", async({page}) =>{
+  
+  const hyd = new HydrantsPage(page);
+
+  id = await hyd.createQP('coonoor');
+})
 
 
+test('Searching a hydrant', async ({page}) =>{
+  
+  const hyd = new HydrantsPage(page);
+  
+  await hyd.searchByQPName(id);
 
-test("Search for an hydrant", async ({ page }) => {
-  const hydrant = new Hydrants(page);
+  await hyd.expectAllRowsContainHydName(id);
+})
 
-  const retrievedHydrantName = await hydrant.getFirstHydrantName('1');
-  await hydrant.searchByHydrantName(retrievedHydrantName);
-  await page.pause();
-  await hydrant.expectAllRowsContainHydrantsName(retrievedHydrantName);
-});
 
-// test('Edit functionality', async ({page}) =>{
-//   const hydrant = new Hydrants(page);
-//   await hydrant.searchByHydrantName('HYD-020');
-//   await hydrant.editFunction();
-//   await page.pause();
-// })
+test('edit Hydrant', async ({page}) =>{
+  const hyd = new HydrantsPage(page);
 
-// test('Delete functionality', async ({page}) =>{
-//   const hydrant = new Hydrants(page);
-//   await hydrant.searchByHydrantName('HYD-020');
-//   await hydrant.deleteFunction();
-//   await page.pause();
-// })
+  await hyd.editFunction('ooty', id);
+})
 
+
+test('Delete Hydrant', async ({page}) =>{
+
+  const hyd = new HydrantsPage(page);
+
+  await hyd.deleteHydrant(id);
+})
